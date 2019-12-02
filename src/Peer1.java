@@ -1,5 +1,6 @@
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.Console;
 import java.io.DataInputStream;
@@ -11,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -102,6 +104,15 @@ class peer1ownerthread extends Thread{
     ObjectOutputStream out=null;
     OutputStream out1=null;
 	Socket s=null;
+    InputStream in=null;
+	DataInputStream data=null;
+	BufferedInputStream buff=null;
+	BufferedOutputStream bos=null;
+	boolean flag=true;
+	DataOutputStream dos=null;
+	ObjectInputStream ois=null;
+	int len;
+	int smblen;
 	public peer1ownerthread(Socket s)
 	{
 		this.s=s;
@@ -110,11 +121,17 @@ class peer1ownerthread extends Thread{
 		System.out.println("owner connection thread done");
 		
 		try {
-	       
+	       ois=new ObjectInputStream(s.getInputStream());
 	        br= new BufferedReader(new InputStreamReader(System.in));
 	        is=new BufferedReader(new InputStreamReader(s.getInputStream()));
 	        out= new ObjectOutputStream(s.getOutputStream());
 	        out1=s.getOutputStream();
+	        in=s.getInputStream();
+	        data=new DataInputStream(in);
+	        buff=new BufferedInputStream(in);
+	        String line="peer1";
+	        out.writeObject(line);
+			out.flush();
 	    }
 	    catch (IOException e){
 	        e.printStackTrace();
@@ -122,24 +139,75 @@ class peer1ownerthread extends Thread{
 	    }
 		
 		FileOutputStream fos;
+		int flag=00;
+		
+		
+		
 		try {
-			fos = new FileOutputStream(
-					"C:\\Users\\VIBHAV\\workspace\\p2p\\src\\peer1\\"+"advanced.pdf");
-			InputStream in = s.getInputStream();
-			DataInputStream data = new DataInputStream(in);
-			long size = data.readLong();
-			byte[] buff = new byte[4096];
-			int bytes = 0;
-			while (size > 0 && (bytes = data.read(buff, 0, (int) Math.min(buff.length, size))) != -1) {
-				fos.write(buff, 0, bytes);
-				size -= bytes;
-			}
-			fos.close();
+		
+			
+			//int fileSize= data.read();
+			int fileSize=(int) ois.readObject();
+			System.out.println(fileSize);
+			ArrayList<File>files=new ArrayList<File>(fileSize); //store list of filename from client directory
+            ArrayList<Integer>sizes = new ArrayList<Integer>(fileSize); //store file size from client
+            //Start to accept those filename from server
+            for (int count=0;count < fileSize;count ++){
+                    File ff=new File(data.readUTF());
+                    files.add(ff);
+            }
+             
+            for (int count=0;count < fileSize;count ++){
+                 
+                    sizes.add(data.readInt());
+            }
+            for (int count =0;count < fileSize ;count ++){                 
+               
+  
+               len=sizes.get(count);
+                         
+             System.out.println("File Size ="+len);
+             
+             out1 = new FileOutputStream("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\peer1\\" + files.get(count));
+             dos=new DataOutputStream(out1);
+             bos=new BufferedOutputStream(out1);
+            
+             byte[] buffer = new byte[1024]; 
+               
+             
+             bos.write(buffer, 0, buffer.length); //This line is important
+              
+             while (len > 0 && (smblen = data.read(buffer)) > 0) { 
+                 dos.write(buffer, 0, smblen); 
+                   len = len - smblen;
+                   dos.flush();
+                 }  
+               dos.close();  //It should close to avoid continue deploy by resource under view
+            }   
+//			
+//			fos = new FileOutputStream(
+//					"C:\\Users\\VIBHAV\\workspace\\p2p\\src\\peer1\\advanced.pdf");
+//			InputStream in = s.getInputStream();
+//			DataInputStream data = new DataInputStream(in);
+//			long size = data.readLong();
+//			byte[] buff = new byte[4096];
+//			int bytes = 0;
+//			while (size > 0 && (bytes = data.read(buff, 0, (int) Math.min(buff.length, size))) != -1) {
+//				fos.write(buff, 0, bytes);
+//				size -= bytes;
+//			}
+//			fos.close();
+//			flag++;
 			System.out.println("done");
-		} catch (FileNotFoundException e) {
+//			System.out.println(flag);
+		}
+			catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
@@ -44,7 +45,7 @@ public static void main(String args[]){
     int bytesAmount = 0;
     while ((bytesAmount = bis.read(buffer)) > 0) {
     //write each chunk of data into separate file with different number in name
-    String filePartName = String.format("%03d.%s", partCounter++, fileName);
+    String filePartName = String.format("%02d.%s", partCounter++, fileName);
     File newFile = new File("C:\\Users\\VIBHAV\\workspace\\p2p\\src\\fileOwner\\chunks\\", filePartName);
     try (FileOutputStream out = new FileOutputStream(newFile)) {
     out.write(buffer, 0, bytesAmount);
@@ -91,24 +92,28 @@ public static void main(String args[]){
 class ServerThread extends Thread{  
 
     String line=null;
+    ObjectOutputStream oos=null;
     BufferedReader  is = null;
     PrintWriter os=null;
     OutputStream out = null;
     ObjectInputStream input=null;
     Socket s=null;
+    DataOutputStream dos=null;
     
-   File directory=new File("C:\\Users\\VIBHAV\\workspace\\cn\\src\\Server\\");
-    List<String> list=new ArrayList<>();
+   
+    
     public ServerThread(Socket s) {
 		this.s=s;
     }
     
     public void run() {
     try{
+    	oos=new ObjectOutputStream(s.getOutputStream());
         is= new BufferedReader(new InputStreamReader(s.getInputStream()));
         os=new PrintWriter(s.getOutputStream());
         input=new ObjectInputStream(s.getInputStream());
         out = s.getOutputStream();
+        dos=new DataOutputStream(out);
 
     }catch(IOException e){
         System.out.println("IO error in server thread");
@@ -116,21 +121,91 @@ class ServerThread extends Thread{
 
 
     try {
+    	File file=new File("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\fileOwner\\chunks\\");
+		File[] Files=file.listFiles();
+		System.out.println(Files.length);
+		int total=Files.length;
+		int mod=total%5;
+		int firstfour=(total-mod)/5;
+		int last=mod+firstfour;
+		
+		
 			while (true) {
-				String FILE_TO_SEND = "C:\\Users\\VIBHAV\\Desktop\\Project2.pdf";
-				File myFile = new File(FILE_TO_SEND);
-                
-				byte[] mybytearray = new byte[(int) myFile.length()];
-				FileInputStream fis = new FileInputStream(myFile);
-				BufferedInputStream bis = new BufferedInputStream(fis);
-				DataInputStream dis = new DataInputStream(bis);
-				dis.readFully(mybytearray, 0, mybytearray.length);
-				DataOutputStream dos = new DataOutputStream(out);
-				dos.writeLong(mybytearray.length);
-				dos.write(mybytearray, 0, mybytearray.length);
-				dos.flush();
+				String response=(String) input.readObject();
+				if(response.equals("peer1")){
+				
+				//dos.writeInt(Files.length);
+				oos.writeObject(firstfour);
+				for(int count=0;count<firstfour;count++){
+					dos.writeUTF(Files[count].getName());
+					System.out.println(Files[count].getName());
+				}
+				
+				for(int count=0;count<firstfour;count++){
+					int filesize=(int) Files[count].length();
+					dos.writeInt(filesize);
+				}
+				for(int count=0;count<firstfour;count++){
+					int filesize = (int) Files[count].length();
+		            byte [] buffer = new byte [filesize];
+		                 
+		            //FileInputStream fis = new FileInputStream(myFile);  
+		            FileInputStream fis = new FileInputStream(Files[count].toString());  
+		            BufferedInputStream bis = new BufferedInputStream(fis);  
+		         
+		            //Sending file name and file size to the server  
+		            bis.read(buffer, 0, buffer.length); //This line is important
+		             
+		            dos.write(buffer, 0, buffer.length);   
+		            dos.flush(); 
+				}
+				
+				
+				
+//				String FILE_TO_SEND = "C:\\Users\\VIBHAV\\Desktop\\ssn.pdf";
+//				File myFile = new File(FILE_TO_SEND);
+//                
+//				byte[] mybytearray = new byte[(int) myFile.length()];
+//				FileInputStream fis = new FileInputStream(myFile);
+//				BufferedInputStream bis = new BufferedInputStream(fis);
+//				DataInputStream dis = new DataInputStream(bis);
+//				dis.readFully(mybytearray, 0, mybytearray.length);
+//				DataOutputStream dos = new DataOutputStream(out);
+//				dos.writeLong(mybytearray.length);
+//				dos.write(mybytearray, 0, mybytearray.length);
+//				dos.flush();
 
 				}
+				else if(response.equals("peer2")){
+					oos.writeObject(firstfour);
+					for(int count=firstfour;count<2*firstfour;count++){
+						dos.writeUTF(Files[count].getName());
+						System.out.println(Files[count].getName());
+					}
+					
+					for(int count=firstfour;count<2*firstfour;count++){
+						int filesize=(int) Files[count].length();
+						dos.writeInt(filesize);
+					}
+					for(int count=firstfour;count<2*firstfour;count++){
+						int filesize = (int) Files[count].length();
+			            byte [] buffer = new byte [filesize];
+			                 
+			            //FileInputStream fis = new FileInputStream(myFile);  
+			            FileInputStream fis = new FileInputStream(Files[count].toString());  
+			            BufferedInputStream bis = new BufferedInputStream(fis);  
+			         
+			            //Sending file name and file size to the server  
+			            bis.read(buffer, 0, buffer.length); //This line is important
+			             
+			            dos.write(buffer, 0, buffer.length);   
+			            dos.flush(); 
+					}
+				}
+				else{
+					System.out.println("nahi hua");
+				}
+			}
 			
         
     } catch (IOException e) {

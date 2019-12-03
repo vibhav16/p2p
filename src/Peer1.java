@@ -55,19 +55,17 @@ public static void main(String args[]) throws IOException, InterruptedException,
     	
     }
     catch(Exception e){
-    	System.out.println(e+"lol");
+    	System.out.println(e);
     }
     while(true){
     	s3=ss2.accept();
-    	System.out.println("connected to peer 2");
+    	System.out.println("Peer 1 connected to Peer 2");
     	uploadthread1 upload=new uploadthread1(s3);
-    	upload.start();    		  
-    	
+    	upload.start();       	
     		Thread.sleep(9000);
     		Socket s2=new Socket(address, 4450);
     		downloadPeer1 peer1=new downloadPeer1(s2);
     		peer1.start();
-    					
     	}   
     	
     }	 
@@ -88,7 +86,7 @@ class downloadPeer1 extends Thread{
 		BufferedOutputStream bos=null;
 		DataOutputStream dos=null;
 		int smblen;
-		System.out.println("file bhejo......");
+		System.out.println("requesting files from peer 5");
 		try {
 			ObjectOutputStream out=new ObjectOutputStream(s.getOutputStream());
 			ois=new ObjectInputStream(s.getInputStream());
@@ -104,21 +102,25 @@ class downloadPeer1 extends Thread{
 			}
 			out.writeObject(arr);
 			out.flush();
+			System.out.println("peer 1 sent request to peer 5");
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		try{
+			//System.out.println("downloading files from peer 5");
 			int fileSize=(int) ois.readObject();
-			System.out.println(fileSize);
-			ArrayList<File>files=new ArrayList<File>(fileSize); //store list of filename from client directory
-            ArrayList<Integer>sizes = new ArrayList<Integer>(fileSize); //store file size from client
-            //Start to accept those filename from server
+			//System.out.println(fileSize);
+			ArrayList<File>files=new ArrayList<File>(fileSize); 
+            ArrayList<Integer>sizes = new ArrayList<Integer>(fileSize); 
+          
             for (int count=0;count < fileSize;count ++){
-            	System.out.println("checking");
+            	//System.out.println("checking");
                     File ff=new File(data.readUTF());
                     files.add(ff);
+                    System.out.println("downloading chunk " +count+" from peer 5");
+                    System.out.println("comaparing the list of peer 1 and peer 5");
             }
              
             for (int count=0;count < fileSize;count ++){
@@ -130,7 +132,7 @@ class downloadPeer1 extends Thread{
   
                int len=sizes.get(count);
                          
-             System.out.println("File Size ="+len);
+             //System.out.println("File Size ="+len);
              
              out1 = new FileOutputStream("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\peer1\\" + files.get(count));
              dos=new DataOutputStream(out1);
@@ -139,16 +141,16 @@ class downloadPeer1 extends Thread{
              byte[] buffer = new byte[1024]; 
                
              
-             bos.write(buffer, 0, buffer.length); //This line is important
+             bos.write(buffer, 0, buffer.length); 
               
              while (len > 0 && (smblen = data.read(buffer)) > 0) { 
                  dos.write(buffer, 0, smblen); 
                    len = len - smblen;
                    dos.flush();
                  }  
-               dos.close();  //It should close to avoid continue deploy by resource under view
+               dos.close();  
             }   
-			System.out.println("done");
+			System.out.println("All Files Downloaded");
 		}
 		 catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
@@ -160,9 +162,6 @@ class downloadPeer1 extends Thread{
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		
-		
-	
 	}
 }
 
@@ -173,8 +172,7 @@ class uploadthread1 extends Thread{
 		this.s=s;
 	}
 	public void run(){
-		System.out.println(" upload connection thread done");
-		
+			
 			ObjectInputStream in=null;
 			ObjectOutputStream oos=null;
 			 OutputStream out = null;
@@ -195,6 +193,7 @@ class uploadthread1 extends Thread{
 			while(true)
 			{
 				ArrayList<String> arr=(ArrayList<String>) in.readObject();
+				System.out.println("Request from peer 2 recieved");
 				File file=new File("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\peer1\\");
 				File[] Files=file.listFiles();
 				ArrayList<String> check=new ArrayList<>();
@@ -207,10 +206,13 @@ class uploadthread1 extends Thread{
 					System.out.println("we have same files!!!");
 				}
 				else{
+					//System.out.println("sending files to peer 2");
 					oos.writeObject(Files.length);
 					for(int count=0;count<Files.length;count++){
 						dos.writeUTF(Files[count].getName());
-						System.out.println(Files[count].getName());
+						System.out.println("sending chunk "+count+" to peer 2");
+						System.out.println("comparing the lists of peer1 and peer2");
+						
 					}
 					
 					for(int count=0;count<Files.length;count++){
@@ -239,11 +241,6 @@ class uploadthread1 extends Thread{
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-
-		
-		
-		
-		
 	
 	}
 }
@@ -267,7 +264,7 @@ class peer1ownerthread extends Thread{
 		this.s=s;
 	}
 	public void run(){
-		System.out.println("owner connection thread done");
+		System.out.println("connected to file owner");
 		
 		try {
 	       ois=new ObjectInputStream(s.getInputStream());
@@ -286,24 +283,20 @@ class peer1ownerthread extends Thread{
 	        e.printStackTrace();
 	        System.err.print("IO Exception");
 	    }
-		
-		FileOutputStream fos;
-		int flag=00;
-		
-		
-		
+				
 		try {
 		
 			
 			//int fileSize= data.read();
 			int fileSize=(int) ois.readObject();
-			System.out.println(fileSize);
+			//System.out.println(fileSize);
 			ArrayList<File>files=new ArrayList<File>(fileSize); //store list of filename from client directory
             ArrayList<Integer>sizes = new ArrayList<Integer>(fileSize); //store file size from client
             //Start to accept those filename from server
             for (int count=0;count < fileSize;count ++){
                     File ff=new File(data.readUTF());
                     files.add(ff);
+                    System.out.println("downloading chunk "+count+" from file owner");
             }
              
             for (int count=0;count < fileSize;count ++){
@@ -315,7 +308,7 @@ class peer1ownerthread extends Thread{
   
                len=sizes.get(count);
                          
-             System.out.println("File Size ="+len);
+             //System.out.println("File Size ="+len);
              
              
              out1 = new FileOutputStream("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\peer1\\" + files.get(count));
@@ -332,24 +325,9 @@ class peer1ownerthread extends Thread{
                    len = len - smblen;
                    dos.flush();
                  }  
-               dos.close();  //It should close to avoid continue deploy by resource under view
+               dos.close();  
             }   
-//			
-//			fos = new FileOutputStream(
-//					"C:\\Users\\VIBHAV\\workspace\\p2p\\src\\peer1\\advanced.pdf");
-//			InputStream in = s.getInputStream();
-//			DataInputStream data = new DataInputStream(in);
-//			long size = data.readLong();
-//			byte[] buff = new byte[4096];
-//			int bytes = 0;
-//			while (size > 0 && (bytes = data.read(buff, 0, (int) Math.min(buff.length, size))) != -1) {
-//				fos.write(buff, 0, bytes);
-//				size -= bytes;
-//			}
-//			fos.close();
-//			flag++;
-           
-			System.out.println("done");
+
 			 ArrayList<String> arr=new ArrayList<>();
 			 File file=new File("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\peer1\\");
 				File[] Files=file.listFiles();

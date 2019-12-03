@@ -34,7 +34,7 @@ public static void main(String args[]){
 
     int sizeOfFiles = 1024 * 100;// 1KB
     byte[] buffer = new byte[sizeOfFiles];
-    File f=new File("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\fileOwner\\test.pdf");
+    File f=new File("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\fileOwner\\advanced.pdf");
 
     String fileName = f.getName();
 

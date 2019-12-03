@@ -42,6 +42,8 @@ public static void main(String args[]) throws IOException{
         peer2ownerthread owner=new peer2ownerthread(s1);
     	owner.start();
         s2=new Socket(address, 4446);
+        downloadPeer2 peer2=new downloadPeer2(s2);
+		peer2.start();
         ss3=new ServerSocket(4447);
        
     }
@@ -53,9 +55,186 @@ public static void main(String args[]) throws IOException{
     {
     	s3=ss3.accept();
     	System.out.println("Connection established with peer3");
+    	uploadthread2 upload=new uploadthread2(s3);
+    	upload.start();  
     }
 }
 }
+
+class uploadthread2 extends Thread{
+	Socket s=null;
+	public uploadthread2(Socket s)
+	{
+		this.s=s;
+	}
+	public void run(){
+		System.out.println(" upload connection thread done");
+		
+			ObjectInputStream in=null;
+			ObjectOutputStream oos=null;
+			 OutputStream out = null;
+			    DataOutputStream dos=null;
+
+			
+			try {
+				in = new ObjectInputStream(s.getInputStream());
+				oos=new ObjectOutputStream(s.getOutputStream());
+				out = s.getOutputStream();
+		        dos=new DataOutputStream(out);
+			}
+			catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			try{
+			while(true)
+			{
+				ArrayList<String> arr=(ArrayList<String>) in.readObject();
+				File file=new File("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\peer2\\");
+				File[] Files=file.listFiles();
+				ArrayList<String> check=new ArrayList<>();
+				
+				for(int i=0;i<Files.length;i++)
+				{
+					check.add(Files[i].getName());
+				}
+				if(arr.equals(check)){
+					System.out.println("we have same files!!!");
+				}
+				else{
+					oos.writeObject(Files.length);
+					for(int count=0;count<Files.length;count++){
+						dos.writeUTF(Files[count].getName());
+						System.out.println(Files[count].getName());
+					}
+					
+					for(int count=0;count<Files.length;count++){
+						int filesize=(int) Files[count].length();
+						dos.writeInt(filesize);
+					}
+					for(int count=0;count<Files.length;count++){
+						int filesize = (int) Files[count].length();
+			            byte [] buffer = new byte [filesize];
+			                 
+			            //FileInputStream fis = new FileInputStream(myFile);  
+			            FileInputStream fis = new FileInputStream(Files[count].toString());  
+			            BufferedInputStream bis = new BufferedInputStream(fis);  
+			         
+			            //Sending file name and file size to the server  
+			            bis.read(buffer, 0, buffer.length); //This line is important
+			             
+			            dos.write(buffer, 0, buffer.length);   
+			            dos.flush(); 
+					}
+				}
+				
+			}
+			}
+			catch (IOException | ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		
+		
+		
+		
+	
+	}
+}
+
+class downloadPeer2 extends Thread{
+	Socket s=null;
+	public downloadPeer2(Socket s)
+	{
+		this.s=s;
+	}
+	public void run(){
+		ObjectInputStream ois=null;
+		InputStream in=null;
+		DataInputStream data=null;
+		OutputStream out1=null;
+		BufferedOutputStream bos=null;
+		DataOutputStream dos=null;
+		int smblen;
+		System.out.println("file bhejo......");
+		try {
+			ObjectOutputStream out=new ObjectOutputStream(s.getOutputStream());
+			ois=new ObjectInputStream(s.getInputStream());
+			in=s.getInputStream();
+	        data=new DataInputStream(in);
+	        out1=s.getOutputStream();
+			File file=new File("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\peer2\\");
+			File[] Files=file.listFiles();
+			ArrayList<String> arr=new ArrayList<>();
+			for(int i=0;i<Files.length;i++)
+			{
+				arr.add(Files[i].getName());
+			}
+			out.writeObject(arr);
+			out.flush();
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try{
+			int fileSize=(int) ois.readObject();
+			System.out.println(fileSize);
+			ArrayList<File>files=new ArrayList<File>(fileSize); //store list of filename from client directory
+            ArrayList<Integer>sizes = new ArrayList<Integer>(fileSize); //store file size from client
+            //Start to accept those filename from server
+            for (int count=0;count < fileSize;count ++){
+            	System.out.println("checking");
+                    File ff=new File(data.readUTF());
+                    files.add(ff);
+            }
+             
+            for (int count=0;count < fileSize;count ++){
+                 
+                    sizes.add(data.readInt());
+            }
+            for (int count =0;count < fileSize ;count ++){                 
+               
+  
+               int len=sizes.get(count);
+                         
+             System.out.println("File Size ="+len);
+             
+             out1 = new FileOutputStream("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\peer2\\" + files.get(count));
+             dos=new DataOutputStream(out1);
+             bos=new BufferedOutputStream(out1);
+            
+             byte[] buffer = new byte[1024]; 
+               
+             
+             bos.write(buffer, 0, buffer.length); //This line is important
+              
+             while (len > 0 && (smblen = data.read(buffer)) > 0) { 
+                 dos.write(buffer, 0, smblen); 
+                   len = len - smblen;
+                   dos.flush();
+                 }  
+               dos.close();  //It should close to avoid continue deploy by resource under view
+            }   
+			System.out.println("done");
+		}
+		 catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		
+		
+	
+	}
+}
+
 
 class peer2ownerthread extends Thread{
 	BufferedReader br=null;
@@ -139,6 +318,18 @@ class peer2ownerthread extends Thread{
                dos.close();  //It should close to avoid continue deploy by resource under view
             }   
 			System.out.println("done");
+			ArrayList<String> arr=new ArrayList<>();
+			 File file=new File("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\peer2\\");
+				File[] Files=file.listFiles();
+				for(int i=0;i<fileSize;i++){
+					arr.add(Files[i].getName().split("\\.")[0]);
+				}
+			 
+			 PrintWriter pw = new PrintWriter(new FileOutputStream("C:\\Users\\VIBHAV\\workspace\\p2p\\src\\peer2.txt"));
+			
+			    for (String str : arr)
+			        pw.println(str);
+			    pw.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -86,6 +86,8 @@ class peer2ownerthread extends Thread{
 	        is=new BufferedReader(new InputStreamReader(s.getInputStream()));
 	        out= new ObjectOutputStream(s.getOutputStream());
 	        out1=s.getOutputStream();
+	        in=s.getInputStream();
+	        data=new DataInputStream(in);
 	        String line="peer2";
 	        out.writeObject(line);
 			out.flush();
@@ -104,6 +106,7 @@ class peer2ownerthread extends Thread{
             ArrayList<Integer>sizes = new ArrayList<Integer>(fileSize); //store file size from client
             //Start to accept those filename from server
             for (int count=0;count < fileSize;count ++){
+            	System.out.println("checking");
                     File ff=new File(data.readUTF());
                     files.add(ff);
             }

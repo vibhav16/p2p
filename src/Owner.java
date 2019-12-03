@@ -34,7 +34,7 @@ public static void main(String args[]){
 
     int sizeOfFiles = 1024 * 100;// 1KB
     byte[] buffer = new byte[sizeOfFiles];
-    File f=new File("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\fileOwner\\advanced.pdf");
+    File f=new File("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\fileOwner\\test.pdf");
 
     String fileName = f.getName();
 
@@ -45,7 +45,7 @@ public static void main(String args[]){
     int bytesAmount = 0;
     while ((bytesAmount = bis.read(buffer)) > 0) {
     //write each chunk of data into separate file with different number in name
-    String filePartName = String.format("%02d.%s", partCounter++, fileName);
+    String filePartName = String.format("%03d.%s", partCounter++, fileName);
     File newFile = new File("C:\\Users\\VIBHAV\\workspace\\p2p\\src\\fileOwner\\chunks\\", filePartName);
     try (FileOutputStream out = new FileOutputStream(newFile)) {
     out.write(buffer, 0, bytesAmount);
@@ -198,7 +198,90 @@ class ServerThread extends Thread{
 			            //Sending file name and file size to the server  
 			            bis.read(buffer, 0, buffer.length); //This line is important
 			             
-			            dos.write(buffer, 0, buffer.length);   
+			            dos.write(buffer, 0, buffer.length); 
+			          
+			            dos.flush(); 
+					}
+				}
+				else if(response.equals("peer3")){
+					oos.writeObject(firstfour);
+					for(int count=2*firstfour;count<3*firstfour;count++){
+						dos.writeUTF(Files[count].getName());
+						System.out.println(Files[count].getName());
+					}
+					
+					for(int count=2*firstfour;count<3*firstfour;count++){
+						int filesize=(int) Files[count].length();
+						dos.writeInt(filesize);
+					}
+					for(int count=2*firstfour;count<3*firstfour;count++){
+						int filesize = (int) Files[count].length();
+			            byte [] buffer = new byte [filesize];
+			                 
+			            //FileInputStream fis = new FileInputStream(myFile);  
+			            FileInputStream fis = new FileInputStream(Files[count].toString());  
+			            BufferedInputStream bis = new BufferedInputStream(fis);  
+			         
+			            //Sending file name and file size to the server  
+			            bis.read(buffer, 0, buffer.length); //This line is important
+			             
+			            dos.write(buffer, 0, buffer.length); 
+			          
+			            dos.flush(); 
+					}
+				}
+				else if(response.equals("peer4")){
+					oos.writeObject(firstfour);
+					for(int count=3*firstfour;count<4*firstfour;count++){
+						dos.writeUTF(Files[count].getName());
+						System.out.println(Files[count].getName());
+					}
+					
+					for(int count=3*firstfour;count<4*firstfour;count++){
+						int filesize=(int) Files[count].length();
+						dos.writeInt(filesize);
+					}
+					for(int count=3*firstfour;count<4*firstfour;count++){
+						int filesize = (int) Files[count].length();
+			            byte [] buffer = new byte [filesize];
+			                 
+			            //FileInputStream fis = new FileInputStream(myFile);  
+			            FileInputStream fis = new FileInputStream(Files[count].toString());  
+			            BufferedInputStream bis = new BufferedInputStream(fis);  
+			         
+			            //Sending file name and file size to the server  
+			            bis.read(buffer, 0, buffer.length); //This line is important
+			             
+			            dos.write(buffer, 0, buffer.length); 
+			          
+			            dos.flush(); 
+					}
+				}
+				
+				else if(response.equals("peer5")){
+					oos.writeObject(firstfour+mod);
+					for(int count=4*firstfour;count<total;count++){
+						dos.writeUTF(Files[count].getName());
+						System.out.println(Files[count].getName());
+					}
+					
+					for(int count=4*firstfour;count<total;count++){
+						int filesize=(int) Files[count].length();
+						dos.writeInt(filesize);
+					}
+					for(int count=4*firstfour;count<total;count++){
+						int filesize = (int) Files[count].length();
+			            byte [] buffer = new byte [filesize];
+			                 
+			            //FileInputStream fis = new FileInputStream(myFile);  
+			            FileInputStream fis = new FileInputStream(Files[count].toString());  
+			            BufferedInputStream bis = new BufferedInputStream(fis);  
+			         
+			            //Sending file name and file size to the server  
+			            bis.read(buffer, 0, buffer.length); //This line is important
+			             
+			            dos.write(buffer, 0, buffer.length); 
+			          
 			            dos.flush(); 
 					}
 				}

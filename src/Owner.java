@@ -27,13 +27,13 @@ public static void main(String args[]){
     Socket s=null;
     ServerSocket ss2=null;
     try{
-        ss2 = new ServerSocket(4445); 
+        ss2 = new ServerSocket(Integer.parseInt(args[0])); 
         System.out.println("File Owner Started...");
         int Counter = 1;
 
     int sizeOfFiles = 1024 * 100;// 100 KB
     byte[] buffer = new byte[sizeOfFiles];
-    File f=new File("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\fileOwner\\advanced.pdf");
+    File f=new File("C:\\Users\\VIBHAV\\Desktop\\CNfinal\\CNfinal\\src\\fileOwner\\test.pdf");
 
     String fileName = f.getName();
 
@@ -43,7 +43,7 @@ public static void main(String args[]){
     int bytesAmount = 0;
     while ((bytesAmount = bis.read(buffer)) > 0) {
     String filePartName = String.format("%03d.%s", Counter++, fileName);
-    File newFile = new File("C:\\Users\\VIBHAV\\workspace\\p2p\\src\\fileOwner\\chunks\\", filePartName);
+    File newFile = new File("C:\\Users\\VIBHAV\\Desktop\\CNfinal\\CNfinal\\src\\fileOwner\\chunks\\", filePartName);
     try (FileOutputStream out = new FileOutputStream(newFile)) {
     out.write(buffer, 0, bytesAmount);
     
@@ -68,18 +68,17 @@ public static void main(String args[]){
     
     while(true){
         try{
+			System.out.println("Waiting...");
             s= ss2.accept();
             System.out.println("Connection Established");
             ServerThread st=new ServerThread(s);
             st.start();
-
         }
-
     catch(Exception e){
         e.printStackTrace();
         System.out.println("Connection Error");
 
-    }
+   		 }
     }
 
 }
@@ -95,7 +94,7 @@ class ServerThread extends Thread{
     OutputStream out = null;
     ObjectInputStream input=null;
     Socket s=null;
-    DataOutputStream dos=null;
+    // DataOutputStream dos=null;
       
     
     public ServerThread(Socket s) {
@@ -103,205 +102,224 @@ class ServerThread extends Thread{
     }
     
     public void run() {
-    try{
-    	oos=new ObjectOutputStream(s.getOutputStream());
-        is= new BufferedReader(new InputStreamReader(s.getInputStream()));
-        os=new PrintWriter(s.getOutputStream());
-        input=new ObjectInputStream(s.getInputStream());
-        out = s.getOutputStream();
-        dos=new DataOutputStream(out);
 
-    }catch(IOException e){
-        System.out.println("IO error in server thread");
-    }
+		try{
+			oos=new ObjectOutputStream(s.getOutputStream());
+			is= new BufferedReader(new InputStreamReader(s.getInputStream()));
+			os=new PrintWriter(s.getOutputStream());
+			input=new ObjectInputStream(s.getInputStream());
+			out = s.getOutputStream();
+			// dos=new DataOutputStream(out);
+
+		}catch(IOException e){
+			System.out.println("IO error in server thread");
+		}
 
 
-    try {
-    	File file=new File("C:\\Users\\VIBHAV\\Workspace\\p2p\\src\\fileOwner\\chunks\\");
-		File[] Files=file.listFiles();
-		//System.out.println(Files.length);
-		int total=Files.length;
-		int mod=total%5;
-		int firstfour=(total-mod)/5;	
-		
+		try {
+			File folder=new File("C:\\Users\\VIBHAV\\Desktop\\CNfinal\\CNfinal\\src\\fileOwner\\chunks\\");
+			File[] Files=folder.listFiles();
+
+			Arrays.sort(Files);
+
+			//System.out.println(Files.length);
+			int total=Files.length;
+			int mod=total%5;
+			int firstfour=(total-mod)/5;	
+
 			while (true) {
-				String response=(String) input.readObject();
-				if(response.equals("peer1")){				
-				System.out.println("Distributing chunks to peer1");
-				oos.writeObject(firstfour);
-				for(int count=0;count<firstfour;count++){
-					dos.writeUTF(Files[count].getName());
-					System.out.println(Files[count].getName());
-				}
 				
-				for(int count=0;count<firstfour;count++){
-					int filesize=(int) Files[count].length();
-					dos.writeInt(filesize);
-				}
-				for(int count=0;count<firstfour;count++){
-					int filesize = (int) Files[count].length();
-		            byte [] buffer = new byte [filesize];
-		                 
-		             
-		            FileInputStream fis = new FileInputStream(Files[count].toString());  
-		            BufferedInputStream bis = new BufferedInputStream(fis);      
-		           
-		            bis.read(buffer, 0, buffer.length); 
-		             
-		            dos.write(buffer, 0, buffer.length);   
-		            dos.flush(); 
+				String chunksRequest = input.readUTF();
+				if(chunksRequest.equals("chunks_request")){	
+
+					System.out.println("Received Chunks request");
+
+					oos.writeInt(total);
+					oos.flush();
 				}
 
+				String response= input.readUTF();
+
+				if(response.equals("peer1")){
+
+					System.out.println("Distributing chunks to " + response);
+					oos.writeObject(firstfour);
+					oos.flush();
+
+					int startIndex = 0;
+					int lastFileIndex = firstfour;
+
+					for(int count=startIndex; count<lastFileIndex; count++){
+						String fileName = Files[count].getName();
+						oos.writeUTF(fileName);
+						oos.flush();
+
+						int filesize=(int) Files[count].length();
+						oos.writeInt(filesize);
+						oos.flush();
+
+						byte [] buffer = new byte [filesize];
+							
+						FileInputStream fis = new FileInputStream(Files[count].toString());  
+						BufferedInputStream bis = new BufferedInputStream(fis);      
+					
+						bis.read(buffer, 0, buffer.length); 
+						
+						oos.write(buffer, 0, buffer.length);   
+						oos.flush(); 
+
+						System.out.println(fileName);
+					}
 				}
 				else if(response.equals("peer2")){
+
+					System.out.println("Distributing chunks to " + response);
 					oos.writeObject(firstfour);
-					System.out.println("Distributing chunks to peer2");
-					for(int count=firstfour;count<2*firstfour;count++){
-						dos.writeUTF(Files[count].getName());
-						System.out.println(Files[count].getName());
-					}
-					
-					for(int count=firstfour;count<2*firstfour;count++){
+					oos.flush();
+
+					int startIndex = firstfour;
+					int lastFileIndex = 2 * firstfour;
+
+					for(int count=startIndex; count<lastFileIndex; count++){
+						String fileName = Files[count].getName();
+						oos.writeUTF(fileName);
+						oos.flush();
+
 						int filesize=(int) Files[count].length();
-						dos.writeInt(filesize);
+						oos.writeInt(filesize);
+						oos.flush();
+
+						byte [] buffer = new byte [filesize];
+							
+						FileInputStream fis = new FileInputStream(Files[count].toString());  
+						BufferedInputStream bis = new BufferedInputStream(fis);      
+					
+						bis.read(buffer, 0, buffer.length); 
+						
+						oos.write(buffer, 0, buffer.length);   
+						oos.flush(); 
+
+						System.out.println(fileName);
 					}
-					for(int count=firstfour;count<2*firstfour;count++){
-						int filesize = (int) Files[count].length();
-			            byte [] buffer = new byte [filesize];
-			                 
-			            
-			            FileInputStream fis = new FileInputStream(Files[count].toString());  
-			            BufferedInputStream bis = new BufferedInputStream(fis);  
-			         			              
-			            bis.read(buffer, 0, buffer.length);			             
-			            dos.write(buffer, 0, buffer.length); 			          
-			            dos.flush(); 
-					}
+
 				}
 				else if(response.equals("peer3")){
+
+					System.out.println("Distributing chunks to " + response);
 					oos.writeObject(firstfour);
-					System.out.println("Distributing chunks to peer3");
-					for(int count=2*firstfour;count<3*firstfour;count++){
-						dos.writeUTF(Files[count].getName());
-						System.out.println(Files[count].getName());
-					}
-					
-					for(int count=2*firstfour;count<3*firstfour;count++){
+					oos.flush();
+
+					int startIndex = 2*firstfour;
+					int lastFileIndex = 3 * firstfour;
+
+					for(int count=startIndex; count<lastFileIndex; count++){
+						String fileName = Files[count].getName();
+						oos.writeUTF(fileName);
+						oos.flush();
+
 						int filesize=(int) Files[count].length();
-						dos.writeInt(filesize);
+						oos.writeInt(filesize);
+						oos.flush();
+
+						byte [] buffer = new byte [filesize];
+							
+						FileInputStream fis = new FileInputStream(Files[count].toString());  
+						BufferedInputStream bis = new BufferedInputStream(fis);      
+					
+						bis.read(buffer, 0, buffer.length); 
+						
+						oos.write(buffer, 0, buffer.length);   
+						oos.flush(); 
+
+						System.out.println(fileName);
 					}
-					for(int count=2*firstfour;count<3*firstfour;count++){
-						int filesize = (int) Files[count].length();
-			            byte [] buffer = new byte [filesize];
-			                 
-			            //FileInputStream fis = new FileInputStream(myFile);  
-			            FileInputStream fis = new FileInputStream(Files[count].toString());  
-			            BufferedInputStream bis = new BufferedInputStream(fis);  
-			         
-			            
-			            bis.read(buffer, 0, buffer.length); 			             
-			            dos.write(buffer, 0, buffer.length);			          
-			            dos.flush(); 
-					}
+
 				}
 				else if(response.equals("peer4")){
+
+					System.out.println("Distributing chunks to " + response);
 					oos.writeObject(firstfour);
-					System.out.println("Distributing chunks to peer4");
-					for(int count=3*firstfour;count<4*firstfour;count++){
-						dos.writeUTF(Files[count].getName());
-						System.out.println(Files[count].getName());
-					}
-					
-					for(int count=3*firstfour;count<4*firstfour;count++){
+					oos.flush();
+
+					int startIndex = 3*firstfour;
+					int lastFileIndex = 4 * firstfour;
+
+					for(int count=startIndex; count<lastFileIndex; count++){
+						String fileName = Files[count].getName();
+						oos.writeUTF(fileName);
+						oos.flush();
+
 						int filesize=(int) Files[count].length();
-						dos.writeInt(filesize);
+						oos.writeInt(filesize);
+						oos.flush();
+
+						byte [] buffer = new byte [filesize];
+							
+						FileInputStream fis = new FileInputStream(Files[count].toString());  
+						BufferedInputStream bis = new BufferedInputStream(fis);      
+					
+						bis.read(buffer, 0, buffer.length); 
+						
+						oos.write(buffer, 0, buffer.length);   
+						oos.flush(); 
+
+						System.out.println(fileName);
 					}
-					for(int count=3*firstfour;count<4*firstfour;count++){
-						int filesize = (int) Files[count].length();
-			            byte [] buffer = new byte [filesize];
-			                 
-			            //FileInputStream fis = new FileInputStream(myFile);  
-			            FileInputStream fis = new FileInputStream(Files[count].toString());  
-			            BufferedInputStream bis = new BufferedInputStream(fis);  
-			         
-			             
-			            bis.read(buffer, 0, buffer.length); 
-			             
-			            dos.write(buffer, 0, buffer.length); 
-			          
-			            dos.flush(); 
-					}
+
 				}
-				
 				else if(response.equals("peer5")){
+
+					System.out.println("Distributing chunks to " + response);
 					oos.writeObject(firstfour+mod);
-					System.out.println("Distributing chunks to peer5");
-					for(int count=4*firstfour;count<total;count++){
-						dos.writeUTF(Files[count].getName());
-						System.out.println(Files[count].getName());
-					}
-					
-					for(int count=4*firstfour;count<total;count++){
+					oos.flush();
+
+					int startIndex = 4*firstfour;
+					int lastFileIndex = total;
+
+					for(int count=startIndex; count<lastFileIndex; count++){
+						String fileName = Files[count].getName();
+						oos.writeUTF(fileName);
+						oos.flush();
+
 						int filesize=(int) Files[count].length();
-						dos.writeInt(filesize);
-					}
-					for(int count=4*firstfour;count<total;count++){
-						int filesize = (int) Files[count].length();
-			            byte [] buffer = new byte [filesize];
-			                 
-			            //FileInputStream fis = new FileInputStream(myFile);  
-			            FileInputStream fis = new FileInputStream(Files[count].toString());  
-			            BufferedInputStream bis = new BufferedInputStream(fis);  
-			         
-			           
-			            bis.read(buffer, 0, buffer.length); 
-			             
-			            dos.write(buffer, 0, buffer.length); 
-			          
-			            dos.flush(); 
+						oos.writeInt(filesize);
+						oos.flush();
+
+						byte [] buffer = new byte [filesize];
+							
+						FileInputStream fis = new FileInputStream(Files[count].toString());  
+						BufferedInputStream bis = new BufferedInputStream(fis);      
+					
+						bis.read(buffer, 0, buffer.length); 
+						
+						oos.write(buffer, 0, buffer.length);   
+						oos.flush(); 
+
+						System.out.println(fileName);
 					}
 				}
 				else{
 					System.out.println("No distribution");
 				}
+
+				System.out.println("Sent all chunks");
+				break;
 			}
 			
-        
-    } catch (IOException e) {
+		} catch (IOException e) {
 
-        line=this.getName(); 
-        System.out.println("IO Error/ Client "+line+" terminated abruptly");
-    }
-    catch(NullPointerException e){
-        line=this.getName(); 
-        System.out.println("Client "+line+" Closed");
-    } catch (Exception e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	}
+			line=this.getName(); 
+			e.printStackTrace();
+			System.out.println("IO Error/ Client "+line+" terminated abruptly");
+		}
+		catch(NullPointerException e){
+			line=this.getName(); 
+			System.out.println("Client "+line+" Closed");
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
-    finally{    
-    try{
-        System.out.println("Connection Closing..");
-        if (is!=null){
-            is.close(); 
-            System.out.println(" Socket Input Stream Closed");
-        }
-
-        if(os!=null){
-            os.close();
-            System.out.println("Socket Out Closed");
-        }
-        if (s!=null){
-        s.close();
-        System.out.println("Socket Closed");
-        }
-
-        }
-    catch(IOException ie){
-        System.out.println("Socket Close Error");
-    }
     
-    }
-    }
+	}
 }
